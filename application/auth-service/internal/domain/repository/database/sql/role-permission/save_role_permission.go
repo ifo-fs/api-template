@@ -4,6 +4,8 @@
 package rolepermission
 
 import (
+	"errors"
+
 	"auth-service/internal/domain/model/database/sql"
 )
 
@@ -11,6 +13,9 @@ func (r *RolePermissionDatabaseSQLRepository) SaveRolePermission(payload *sql.Ro
 	rolePermission := new(sql.RolePermission)
 
 	q := r.Writer()
+	if q == nil {
+		return errors.New("database sql writer is not configured")
+	}
 
 	if payload != nil {
 		rolePermission = payload

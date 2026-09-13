@@ -4,6 +4,8 @@
 package author
 
 import (
+	"errors"
+
 	"author-service/internal/domain/model/database/sql"
 	"author-service/internal/pkg/constant"
 	"author-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *AuthorDatabaseSQLRepository) FirstAuthor(query *types.QuerySQL) (*sql.A
 	author := new(sql.Author)
 
 	q := r.Reader()
+	if q == nil {
+		return nil, errors.New("database sql reader is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))

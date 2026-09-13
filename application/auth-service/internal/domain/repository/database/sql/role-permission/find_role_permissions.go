@@ -4,6 +4,8 @@
 package rolepermission
 
 import (
+	"errors"
+
 	"auth-service/internal/domain/model/database/sql"
 	"auth-service/internal/pkg/constant"
 	"auth-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *RolePermissionDatabaseSQLRepository) FindRolePermissions(query *types.Q
 	authors := make([]*sql.RolePermission, 0)
 
 	q := r.Reader()
+	if q == nil {
+		return nil, errors.New("database sql reader is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))

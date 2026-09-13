@@ -4,6 +4,8 @@
 package category
 
 import (
+	"errors"
+
 	"category-service/internal/domain/model/database/sql"
 )
 
@@ -11,6 +13,9 @@ func (r *CategoryDatabaseSQLRepository) DeleteCategory(payload *sql.Category) er
 	category := new(sql.Category)
 
 	q := r.Writer()
+	if q == nil {
+		return errors.New("database sql writer is not configured")
+	}
 
 	if payload != nil {
 		category = payload

@@ -4,6 +4,8 @@
 package user
 
 import (
+	"errors"
+
 	"auth-service/internal/domain/model/database/sql"
 )
 
@@ -11,6 +13,9 @@ func (r *UserDatabaseSQLRepository) SaveUser(payload *sql.User) error {
 	user := new(sql.User)
 
 	q := r.Writer()
+	if q == nil {
+		return errors.New("database sql writer is not configured")
+	}
 
 	if payload != nil {
 		user = payload

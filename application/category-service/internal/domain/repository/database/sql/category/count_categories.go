@@ -4,6 +4,8 @@
 package category
 
 import (
+	"errors"
+
 	"category-service/internal/pkg/constant"
 	"category-service/internal/pkg/types"
 	"category-service/internal/pkg/util/builder"
@@ -13,6 +15,9 @@ func (r *CategoryDatabaseSQLRepository) CountCategories(query *types.QuerySQL) (
 	count := int64(0)
 
 	q := r.Reader()
+	if q == nil {
+		return count, errors.New("database sql reader is not configured")
+	}
 
 	defaultQuery := &types.QuerySQL{
 		Selects: []types.SelectQuerySQLOperation{

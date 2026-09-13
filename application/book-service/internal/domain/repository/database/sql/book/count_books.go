@@ -4,6 +4,8 @@
 package book
 
 import (
+	"errors"
+
 	"book-service/internal/pkg/constant"
 	"book-service/internal/pkg/types"
 	"book-service/internal/pkg/util/builder"
@@ -13,6 +15,9 @@ func (r *BookDatabaseSQLRepository) CountBooks(query *types.QuerySQL) (int64, er
 	count := int64(0)
 
 	q := r.Reader()
+	if q == nil {
+		return count, errors.New("database sql reader is not configured")
+	}
 
 	defaultQuery := &types.QuerySQL{
 		Selects: []types.SelectQuerySQLOperation{

@@ -4,6 +4,8 @@
 package book
 
 import (
+	"errors"
+
 	"book-service/internal/domain/model/database/sql"
 	"book-service/internal/pkg/constant"
 	"book-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *BookDatabaseSQLRepository) FindBooks(query *types.QuerySQL) ([]*sql.Boo
 	books := make([]*sql.Book, 0)
 
 	q := r.Writer()
+	if q == nil {
+		return nil, errors.New("database sql writer is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))

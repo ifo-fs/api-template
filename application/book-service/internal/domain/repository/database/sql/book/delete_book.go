@@ -4,6 +4,8 @@
 package book
 
 import (
+	"errors"
+
 	"book-service/internal/domain/model/database/sql"
 )
 
@@ -11,6 +13,9 @@ func (r *BookDatabaseSQLRepository) DeleteBook(payload *sql.Book) error {
 	book := new(sql.Book)
 
 	q := r.Writer()
+	if q == nil {
+		return errors.New("database sql writer is not configured")
+	}
 
 	if payload != nil {
 		book = payload
