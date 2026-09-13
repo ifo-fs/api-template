@@ -4,6 +4,8 @@
 package user
 
 import (
+	"errors"
+
 	"auth-service/internal/domain/model/database/sql"
 	"auth-service/internal/pkg/constant"
 	"auth-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *UserDatabaseSQLRepository) FirstUser(query *types.QuerySQL) (*sql.User,
 	user := new(sql.User)
 
 	q := r.Reader()
+	if q == nil {
+		return nil, errors.New("database sql reader is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))

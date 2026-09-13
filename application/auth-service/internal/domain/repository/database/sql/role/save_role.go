@@ -4,6 +4,8 @@
 package role
 
 import (
+	"errors"
+
 	"auth-service/internal/domain/model/database/sql"
 )
 
@@ -11,6 +13,9 @@ func (r *RoleDatabaseSQLRepository) SaveRole(payload *sql.Role) error {
 	role := new(sql.Role)
 
 	q := r.Writer()
+	if q == nil {
+		return errors.New("database sql writer is not configured")
+	}
 
 	if payload != nil {
 		role = payload
