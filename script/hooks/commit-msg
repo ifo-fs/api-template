@@ -45,7 +45,7 @@ fi
 # Validate conventional commit format
 # Pattern: type(scope): description
 # Examples: feat(service-a): add new feature, fix(auth): resolve login issue
-if echo "$commit_msg" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\([a-zA-Z0-9_-]+\):( [^[:space:]]+)? .+'; then
+if echo "$commit_msg" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)\([a-zA-Z0-9_/-]+\):( [^[:space:]]+)? .+'; then
     print_success "Conventional commit format validation passed: $commit_msg"
 else
     print_error "Commit message does not follow conventional format."

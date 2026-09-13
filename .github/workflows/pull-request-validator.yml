@@ -58,7 +58,22 @@ jobs:
         print_info() {
             echo -e "${BLUE}INFO: $1${NC}"
         }
-        
+
+        # Check if a file matches any pattern in the given service's .dockerignore
+        # (e.g. *.cnf, *.env, *.key) - such files are excluded from the built image
+        # and shouldn't count as application changes.
+        matches_dockerignore() {
+            local service="$1" fname="$2" dockerignore_file="application/$1/.dockerignore"
+            [ -f "$dockerignore_file" ] || return 1
+            while IFS= read -r pattern; do
+                pattern="${pattern%%#*}"
+                pattern="$(echo "$pattern" | xargs)"
+                [ -z "$pattern" ] && continue
+                [[ "$fname" == $pattern ]] && return 0
+            done < "$dockerignore_file"
+            return 1
+        }
+
         print_info "Checking for application changes..."
         
         # Get commits in this PR
@@ -85,7 +100,9 @@ jobs:
                     # Skip files that shouldn't trigger changelog generation
                     if [[ "$filename" == "CHANGELOG.md" ]] || \
                        [[ "$filename" == "Makefile" ]] || \
-                       [[ "$filename" == "docker-compose.yaml" ]]; then
+                       [[ "$filename" == "docker-compose.yaml" ]] || \
+                       [[ "$filename" == ".dockerignore" ]] || \
+                       matches_dockerignore "$application_name" "$filename"; then
                         print_info "Skipping file (excluded from application change detection): $file"
                         continue
                     fi
@@ -350,7 +367,22 @@ jobs:
         print_info() {
             echo -e "${BLUE}INFO: $1${NC}"
         }
-        
+
+        # Check if a file matches any pattern in the given service's .dockerignore
+        # (e.g. *.cnf, *.env, *.key) - such files are excluded from the built image
+        # and shouldn't count as application changes requiring a version bump.
+        matches_dockerignore() {
+            local service="$1" fname="$2" dockerignore_file="application/$1/.dockerignore"
+            [ -f "$dockerignore_file" ] || return 1
+            while IFS= read -r pattern; do
+                pattern="${pattern%%#*}"
+                pattern="$(echo "$pattern" | xargs)"
+                [ -z "$pattern" ] && continue
+                [[ "$fname" == $pattern ]] && return 0
+            done < "$dockerignore_file"
+            return 1
+        }
+
         # Function to parse version
         parse_version() {
             local version=$1
@@ -456,7 +488,9 @@ jobs:
                     # Skip files that shouldn't trigger validation
                     if [[ "$filename" == "CHANGELOG.md" ]] || \
                        [[ "$filename" == "Makefile" ]] || \
-                       [[ "$filename" == "docker-compose.yaml" ]]; then
+                       [[ "$filename" == "docker-compose.yaml" ]] || \
+                       [[ "$filename" == ".dockerignore" ]] || \
+                       matches_dockerignore "$application_name" "$filename"; then
                         print_info "Skipping file (excluded from validation trigger): $file"
                         continue
                     fi
@@ -493,7 +527,9 @@ jobs:
                         # Skip excluded files that don't count as significant changes
                         if [[ "$filename" != "CHANGELOG.md" ]] && \
                            [[ "$filename" != "Makefile" ]] && \
-                           [[ "$filename" != "docker-compose.yaml" ]]; then
+                           [[ "$filename" != "docker-compose.yaml" ]] && \
+                           [[ "$filename" != ".dockerignore" ]] && \
+                           ! matches_dockerignore "$application_name" "$filename"; then
                             echo "$file"
                         fi
                     done)

@@ -29,6 +29,21 @@ print_info() {
     echo -e "${BLUE}INFO: $1${NC}"
 }
 
+# Check if a file matches any pattern in the given service's .dockerignore
+# (e.g. *.cnf, *.env, *.key) - such files are excluded from the built image
+# and shouldn't count as application changes requiring a version bump.
+matches_dockerignore() {
+    local service="$1" fname="$2" dockerignore_file="application/$1/.dockerignore"
+    [ -f "$dockerignore_file" ] || return 1
+    while IFS= read -r pattern; do
+        pattern="${pattern%%#*}"
+        pattern="$(echo "$pattern" | xargs)"
+        [ -z "$pattern" ] && continue
+        [[ "$fname" == $pattern ]] && return 0
+    done < "$dockerignore_file"
+    return 1
+}
+
 # Function to parse version
 parse_version() {
     local version=$1
@@ -120,6 +135,10 @@ if [[ "$url" == *"origin"* ]] || [[ "$remote" == "origin" ]]; then
     # All branches (prod-v1 itself and feature branches) are validated
     # against prod-v1, the single base branch for this repo.
     target_branch="origin/prod-v1"
+    # Refresh the local origin/prod-v1 ref so version comparisons below
+    # reflect the actual remote state, not a stale local cache.
+    print_info "Fetching latest prod-v1 from origin..."
+    git fetch origin prod-v1 --quiet 2>/dev/null || print_warning "Could not fetch origin/prod-v1; using local cache"
 else
     # Fallback to upstream if available
     target_branch="@{u}"
@@ -144,7 +163,6 @@ print_info "Found commits to push: $(echo "$commits_being_pushed" | wc -l) commi
 
 # Check for application changes in the commits being pushed
 application_services=()
-version_changes=()
 
 # Collect all application services that have changes (excluding certain files)
 while IFS= read -r commit; do
@@ -159,20 +177,15 @@ while IFS= read -r commit; do
             # Skip files that shouldn't trigger version validation
             if [[ "$filename" == "CHANGELOG.md" ]] || \
                [[ "$filename" == "Makefile" ]] || \
-               [[ "$filename" == "docker-compose.yaml" ]]; then
+               [[ "$filename" == "docker-compose.yaml" ]] || \
+               [[ "$filename" == ".dockerignore" ]] || \
+               matches_dockerignore "$service_name" "$filename"; then
                 print_info "Skipping file (excluded from validation trigger): $file"
                 continue
             fi
-            
+
             if [[ ! " ${application_services[@]} " =~ " ${service_name} " ]]; then
                 application_services+=("$service_name")
-            fi
-            
-            # Check for VERSION file changes
-            if [[ $file == application/*/VERSION ]]; then
-                if [[ ! " ${version_changes[@]} " =~ " ${service_name} " ]]; then
-                    version_changes+=("$service_name")
-                fi
             fi
         fi
     done <<< "$files_changed"

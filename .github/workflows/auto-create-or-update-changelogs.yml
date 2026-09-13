@@ -63,7 +63,22 @@ jobs:
         print_success() { echo -e "${GREEN}SUCCESS: $1${NC}"; }
         print_warning() { echo -e "${YELLOW}WARNING: $1${NC}"; }
         print_info() { echo -e "${BLUE}INFO: $1${NC}"; }
-        
+
+        # Check if a file matches any pattern in the given service's .dockerignore
+        # (e.g. *.cnf, *.env, *.key) - such files are excluded from the built image
+        # and shouldn't count as application changes needing a changelog entry.
+        matches_dockerignore() {
+            local service="$1" fname="$2" dockerignore_file="application/$1/.dockerignore"
+            [ -f "$dockerignore_file" ] || return 1
+            while IFS= read -r pattern; do
+                pattern="${pattern%%#*}"
+                pattern="$(echo "$pattern" | xargs)"
+                [ -z "$pattern" ] && continue
+                [[ "$fname" == $pattern ]] && return 0
+            done < "$dockerignore_file"
+            return 1
+        }
+
         print_info "Checking for application changes in pushed commits..."
         
         # Skip if this is an auto-generated changelog commit to prevent infinite loops
@@ -125,7 +140,9 @@ jobs:
                     # Skip files that shouldn't trigger changelog generation
                     if [[ "$filename" == "CHANGELOG.md" ]] || \
                        [[ "$filename" == "Makefile" ]] || \
-                       [[ "$filename" == "docker-compose.yaml" ]]; then
+                       [[ "$filename" == "docker-compose.yaml" ]] || \
+                       [[ "$filename" == ".dockerignore" ]] || \
+                       matches_dockerignore "$application_name" "$filename"; then
                         print_info "Skipping file (excluded from changelog trigger): $file"
                         continue
                     fi
@@ -265,7 +282,9 @@ jobs:
                             # Skip files that shouldn't count as application changes
                             if [[ "$filename" == "CHANGELOG.md" ]] || \
                                [[ "$filename" == "Makefile" ]] || \
-                               [[ "$filename" == "docker-compose.yaml" ]]; then
+                               [[ "$filename" == "docker-compose.yaml" ]] || \
+                               [[ "$filename" == ".dockerignore" ]] || \
+                               matches_dockerignore "$application" "$filename"; then
                                 continue
                             fi
                             
