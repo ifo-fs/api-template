@@ -1,5 +1,5 @@
 # Confidential files
-*.env
+*.env*
 *.cnf
 *.crt
 *.csr
