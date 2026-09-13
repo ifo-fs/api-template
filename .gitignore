@@ -27,3 +27,6 @@ dist/
 
 # Docker Mounted Volumes directories
 archive/
+
+# macOS
+.DS_Store

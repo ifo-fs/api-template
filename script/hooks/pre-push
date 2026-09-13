@@ -117,14 +117,9 @@ print_info "Running pre-push hook for version validation..."
 # The remote and URL are passed as arguments to pre-push hook
 target_branch=""
 if [[ "$url" == *"origin"* ]] || [[ "$remote" == "origin" ]]; then
-    # Determine target branch from current branch or default to prod-v1
-    current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
-    if [[ "$current_branch" == "prod-v1" ]]; then
-        target_branch="origin/prod-v1"
-    else
-        # For feature branches, compare against prod-v1
-        target_branch="origin/prod-v1"
-    fi
+    # All branches (prod-v1 itself and feature branches) are validated
+    # against prod-v1, the single base branch for this repo.
+    target_branch="origin/prod-v1"
 else
     # Fallback to upstream if available
     target_branch="@{u}"
@@ -313,7 +308,12 @@ for service in "${application_services[@]}"; do
             print_error "Invalid version format in $version_file. Expected format: x.y.z"
             exit 1
         fi
-        
+
+        if ! [[ $previous_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            print_error "Invalid previous version format for $service: '$previous_version' (from base branch). Expected format: x.y.z"
+            exit 1
+        fi
+
         # Validate version increment
         if ! validate_version_increment "$previous_version" "$current_version"; then
             exit 1

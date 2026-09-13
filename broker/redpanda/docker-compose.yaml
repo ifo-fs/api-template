@@ -156,20 +156,22 @@ services:
             username: ${BROKER_REDPANDA_BOOTSTRAP_USER_USERNAME}
             password: ${BROKER_REDPANDA_BOOTSTRAP_USER_PASSWORD}
         console:
-          # Configures Redpanda Console to fetch topic documentation from GitHub and display it in the UI.
+          # Topic documentation (fetches docs from a git repo to show in the UI) is
+          # disabled: the referenced repository (redpanda-data/docs) no longer
+          # exists, and Console treats that as a fatal error on startup rather
+          # than a soft failure, crash-looping the whole console container.
           # See https://docs.redpanda.com/current/console/config/topic-documentation/
           topicDocumentation:
-            enabled: true
-            git:
-              enabled: true
-              repository:
-                url: https://github.com/redpanda-data/docs
-                branch: main
-                baseDirectory: tests/docker-compose
+            enabled: false
         login:
           enabled: true
           jwtSecret: ${BROKER_REDPANDA_CONSOLE_JWT_SECRET}
-          useSecureCookies: false
+          # Defaults to false for local HTTP-only development. Set
+          # BROKER_REDPANDA_CONSOLE_SECURE_COOKIES=true once the console is
+          # served over HTTPS (e.g. behind a TLS-terminating proxy) — a
+          # secure cookie is dropped by browsers on plain HTTP and would
+          # break login.
+          useSecureCookies: ${BROKER_REDPANDA_CONSOLE_SECURE_COOKIES:-false}
           # Enable plain login authentication (enterprise feature)
           # See https://docs.redpanda.com/current/console/config/security/plain/
           plain:

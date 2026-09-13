@@ -35,7 +35,7 @@ services:
       - POSTGRES_USER=${DATABASE_SQL_POSTGRES_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_SQL_POSTGRES_PASSWORD}
       - PGTZ=${DATABASE_SQL_POSTGRES_TIME_ZONE}
-    user: postgres
+    user: root
     ports:
       - 5434:5432
     restart: always
@@ -46,13 +46,20 @@ services:
       - replica_postgres_data:/var/lib/postgresql/data
       - ./replica/config:/etc/postgresql
       - ./replica/archive:/mnt/server/archive
+    # WARNING: the `rm -rf` below wipes this replica's data directory and
+    # re-clones a fresh base backup from primary_postgres on every container
+    # (re)start. That's intentional for a disposable local-dev replica, but
+    # this compose file must not be reused unmodified against a node that
+    # ever held real/promoted data — add a "only bootstrap if PGDATA is
+    # empty" guard before doing that.
     command: >
       bash -c "
       export PGPASSWORD='${DATABASE_SQL_POSTGRES_REPLICATOR_PASSWORD}' &&
       rm -rf /var/lib/postgresql/data/* &&
       pg_basebackup -h primary_postgres -p 5432 -U replicator -D /var/lib/postgresql/data -Fp -Xs -R &&
+      chown -R postgres:postgres /var/lib/postgresql/data &&
       chmod 0700 /var/lib/postgresql/data &&
-      exec postgres -c config_file=/etc/postgresql/postgresql.conf"
+      exec gosu postgres postgres -c config_file=/etc/postgresql/postgresql.conf"
     networks:
       - backend
     healthcheck:

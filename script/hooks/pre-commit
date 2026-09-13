@@ -59,7 +59,7 @@ changed_services=()
 while IFS= read -r file; do
     if [[ $file == application/* ]]; then
         application_files_modified=true
-        service_name=$(echo $file | cut -d'/' -f2)
+        service_name=$(echo "$file" | cut -d'/' -f2)
         if [[ ! " ${changed_services[@]} " =~ " ${service_name} " ]]; then
             changed_services+=("$service_name")
         fi
