@@ -204,13 +204,15 @@ version_validation_failed=false
 
 for service in "${application_services[@]}"; do
     version_file="application/$service/VERSION"
-    
-    if [ ! -f "$version_file" ]; then
-        print_warning "VERSION file not found for service $service. Skipping version validation."
+
+    # Read the committed state at HEAD, not the working tree - an uncommitted
+    # VERSION bump must not be able to satisfy this check.
+    if ! git show "HEAD:$version_file" &>/dev/null; then
+        print_warning "VERSION file not found for service $service at HEAD. Skipping version validation."
         continue
     fi
-    
-    current_version=$(cat "$version_file" | tr -d '\n\r' | tr -d ' ')
+
+    current_version=$(git show "HEAD:$version_file" | tr -d '\n\r' | tr -d ' ')
     base_version=""
     
     # Get version from base branch (prod-v1)
@@ -244,8 +246,8 @@ if [ "$version_validation_failed" = true ]; then
     print_error "1. For each modified service, update its VERSION file:"
     for service in "${application_services[@]}"; do
         version_file="application/$service/VERSION"
-        if [ -f "$version_file" ]; then
-            current_version=$(cat "$version_file" | tr -d '\n\r' | tr -d ' ')
+        if git show "HEAD:$version_file" &>/dev/null; then
+            current_version=$(git show "HEAD:$version_file" | tr -d '\n\r' | tr -d ' ')
             base_version=""
             if git show origin/prod-v1:"$version_file" &>/dev/null; then
                 base_version=$(git show origin/prod-v1:"$version_file" | tr -d '\n\r' | tr -d ' ')
@@ -276,14 +278,14 @@ print_success "Version update validation passed: All services have updated versi
 # Process each service
 for service in "${application_services[@]}"; do
     version_file="application/$service/VERSION"
-    
-    if [ ! -f "$version_file" ]; then
-        print_warning "VERSION file not found for service $service. Skipping."
+
+    if ! git show "HEAD:$version_file" &>/dev/null; then
+        print_warning "VERSION file not found for service $service at HEAD. Skipping."
         continue
     fi
-    
-    current_version=$(cat "$version_file" | tr -d '\n\r' | tr -d ' ')
-    
+
+    current_version=$(git show "HEAD:$version_file" | tr -d '\n\r' | tr -d ' ')
+
     # Get the previous version from base branch (prod-v1) for consistent comparison
     # This ensures all developers and CI systems use the same reference point
     # and provides a clear baseline of what's currently deployed vs. what's being released
