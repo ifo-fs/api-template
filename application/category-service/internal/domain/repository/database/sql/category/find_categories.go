@@ -4,6 +4,8 @@
 package category
 
 import (
+	"errors"
+
 	"category-service/internal/domain/model/database/sql"
 	"category-service/internal/pkg/constant"
 	"category-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *CategoryDatabaseSQLRepository) FindCategories(query *types.QuerySQL) ([
 	categories := make([]*sql.Category, 0)
 
 	q := r.Reader()
+	if q == nil {
+		return nil, errors.New("database sql reader is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))
