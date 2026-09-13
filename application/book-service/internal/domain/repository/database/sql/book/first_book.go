@@ -4,6 +4,8 @@
 package book
 
 import (
+	"errors"
+
 	"book-service/internal/domain/model/database/sql"
 	"book-service/internal/pkg/constant"
 	"book-service/internal/pkg/types"
@@ -14,6 +16,9 @@ func (r *BookDatabaseSQLRepository) FirstBook(query *types.QuerySQL) (*sql.Book,
 	book := new(sql.Book)
 
 	q := r.Reader()
+	if q == nil {
+		return nil, errors.New("database sql reader is not configured")
+	}
 
 	if query != nil {
 		q = builder.BuildQuerySQL(r.model.TableName(), q, query, constant.DialectDatabaseSQL(q.Dialector.Name()))
