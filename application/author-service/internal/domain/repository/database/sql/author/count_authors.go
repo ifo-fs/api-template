@@ -4,6 +4,8 @@
 package author
 
 import (
+	"errors"
+
 	"author-service/internal/pkg/constant"
 	"author-service/internal/pkg/types"
 	"author-service/internal/pkg/util/builder"
@@ -13,6 +15,9 @@ func (r *AuthorDatabaseSQLRepository) CountAuthors(query *types.QuerySQL) (int64
 	count := int64(0)
 
 	q := r.Reader()
+	if q == nil {
+		return count, errors.New("database sql reader is not configured")
+	}
 
 	defaultQuery := &types.QuerySQL{
 		Selects: []types.SelectQuerySQLOperation{
