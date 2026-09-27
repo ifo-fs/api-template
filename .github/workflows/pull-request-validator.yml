@@ -134,8 +134,8 @@ jobs:
         
         print_success "Found ${#applications[@]} applications with changes"
 
-  validate-api-mk:
-    name: Validate api.mk Applications List
+  validate-stack-mk:
+    name: Validate stack.mk Applications List
     runs-on: ubuntu-latest
     
     steps:
@@ -144,7 +144,7 @@ jobs:
       with:
         fetch-depth: 1
     
-    - name: Validate applications in api.mk
+    - name: Validate applications in stack.mk
       run: |
         #!/bin/bash
         set -e
@@ -172,29 +172,29 @@ jobs:
             echo -e "${BLUE}INFO: $1${NC}"
         }
         
-        print_info "Validating that all applications are listed in api.mk..."
+        print_info "Validating that all applications are listed in stack.mk..."
         
-        # Check if api.mk exists
-        if [ ! -f "api.mk" ]; then
-            print_error "api.mk file not found in repository root"
+        # Check if stack.mk exists
+        if [ ! -f "stack.mk" ]; then
+            print_error "stack.mk file not found in repository root"
             exit 1
         fi
         
-        # Extract applications from api.mk
-        if ! grep -q "^APPLICATIONS :=" api.mk; then
-            print_error "APPLICATIONS variable not found in api.mk"
+        # Extract applications from stack.mk
+        if ! grep -q "^APPLICATIONS :=" stack.mk; then
+            print_error "APPLICATIONS variable not found in stack.mk"
             exit 1
         fi
         
-        api_mk_applications=$(grep "^APPLICATIONS :=" api.mk | sed 's/APPLICATIONS := //' | tr ' ' '\n' | sort)
+        stack_mk_applications=$(grep "^APPLICATIONS :=" stack.mk | sed 's/APPLICATIONS := //' | tr ' ' '\n' | sort)
         
-        if [ -z "$api_mk_applications" ]; then
-            print_error "No applications found in api.mk APPLICATIONS variable"
+        if [ -z "$stack_mk_applications" ]; then
+            print_error "No applications found in stack.mk APPLICATIONS variable"
             exit 1
         fi
         
-        print_info "Applications listed in api.mk:"
-        echo "$api_mk_applications" | while read app; do
+        print_info "Applications listed in stack.mk:"
+        echo "$stack_mk_applications" | while read app; do
             if [ -n "$app" ]; then
                 print_info "  - $app"
             fi
@@ -236,63 +236,63 @@ jobs:
         done
         
         # Compare the two lists
-        missing_in_api_mk=()
-        extra_in_api_mk=()
+        missing_in_stack_mk=()
+        extra_in_stack_mk=()
         
-        # Check for applications in filesystem but not in api.mk
+        # Check for applications in filesystem but not in stack.mk
         while IFS= read -r app; do
-            if [ -n "$app" ] && ! echo "$api_mk_applications" | grep -q "^$app$"; then
-                missing_in_api_mk+=("$app")
+            if [ -n "$app" ] && ! echo "$stack_mk_applications" | grep -q "^$app$"; then
+                missing_in_stack_mk+=("$app")
             fi
         done <<< "$filesystem_applications"
         
-        # Check for applications in api.mk but not in filesystem
+        # Check for applications in stack.mk but not in filesystem
         while IFS= read -r app; do
             if [ -n "$app" ] && ! echo "$filesystem_applications" | grep -q "^$app$"; then
-                extra_in_api_mk+=("$app")
+                extra_in_stack_mk+=("$app")
             fi
-        done <<< "$api_mk_applications"
+        done <<< "$stack_mk_applications"
         
         # Report results
         validation_failed=false
         
-        if [ ${#missing_in_api_mk[@]} -gt 0 ]; then
-            print_error "Applications found in filesystem but missing from api.mk:"
-            for app in "${missing_in_api_mk[@]}"; do
+        if [ ${#missing_in_stack_mk[@]} -gt 0 ]; then
+            print_error "Applications found in filesystem but missing from stack.mk:"
+            for app in "${missing_in_stack_mk[@]}"; do
                 print_error "  - $app"
             done
             validation_failed=true
         fi
         
-        if [ ${#extra_in_api_mk[@]} -gt 0 ]; then
-            print_error "Applications listed in api.mk but not found in filesystem:"
-            for app in "${extra_in_api_mk[@]}"; do
+        if [ ${#extra_in_stack_mk[@]} -gt 0 ]; then
+            print_error "Applications listed in stack.mk but not found in filesystem:"
+            for app in "${extra_in_stack_mk[@]}"; do
                 print_error "  - $app"
             done
             validation_failed=true
         fi
         
         # Create GitHub Actions summary
-        echo "## 📋 api.mk Applications Validation" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 stack.mk Applications Validation" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         if [ "$validation_failed" = true ]; then
             echo "### ❌ Validation Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             
-            if [ ${#missing_in_api_mk[@]} -gt 0 ]; then
-                echo "**Missing from api.mk:** ${missing_in_api_mk[*]}" >> $GITHUB_STEP_SUMMARY
+            if [ ${#missing_in_stack_mk[@]} -gt 0 ]; then
+                echo "**Missing from stack.mk:** ${missing_in_stack_mk[*]}" >> $GITHUB_STEP_SUMMARY
             fi
             
-            if [ ${#extra_in_api_mk[@]} -gt 0 ]; then
-                echo "**Extra in api.mk:** ${extra_in_api_mk[*]}" >> $GITHUB_STEP_SUMMARY
+            if [ ${#extra_in_stack_mk[@]} -gt 0 ]; then
+                echo "**Extra in stack.mk:** ${extra_in_stack_mk[*]}" >> $GITHUB_STEP_SUMMARY
             fi
             
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Rule:** All applications in the \`application/\` directory must be listed in the \`APPLICATIONS\` variable in \`api.mk\`." >> $GITHUB_STEP_SUMMARY
+            echo "**Rule:** All applications in the \`application/\` directory must be listed in the \`APPLICATIONS\` variable in \`stack.mk\`." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**To fix this issue:**" >> $GITHUB_STEP_SUMMARY
-            echo "1. Update the \`APPLICATIONS\` variable in \`api.mk\`" >> $GITHUB_STEP_SUMMARY
+            echo "1. Update the \`APPLICATIONS\` variable in \`stack.mk\`" >> $GITHUB_STEP_SUMMARY
             echo "2. Add missing applications or remove extra ones" >> $GITHUB_STEP_SUMMARY
             echo "3. Ensure the list matches exactly with the \`application/\` directory contents" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -303,24 +303,24 @@ jobs:
         else
             echo "### ✅ Validation Passed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "All applications in the filesystem are properly listed in api.mk" >> $GITHUB_STEP_SUMMARY
+            echo "All applications in the filesystem are properly listed in stack.mk" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Applications verified:** $(echo "$filesystem_applications" | wc -l)" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [ "$validation_failed" = true ]; then
             print_error ""
-            print_error "API.MK APPLICATIONS VALIDATION FAILED"
+            print_error "stack.mk APPLICATIONS VALIDATION FAILED"
             print_error ""
-            print_error "The APPLICATIONS list in api.mk does not match the applications in the filesystem."
+            print_error "The APPLICATIONS list in stack.mk does not match the applications in the filesystem."
             print_error ""
-            print_error "Current api.mk APPLICATIONS: $(echo "$api_mk_applications" | tr '\n' ' ')"
+            print_error "Current stack.mk APPLICATIONS: $(echo "$stack_mk_applications" | tr '\n' ' ')"
             print_error "Expected based on filesystem: $(echo "$filesystem_applications" | tr '\n' ' ')"
             print_error ""
-            print_error "Please update the APPLICATIONS variable in api.mk to match the filesystem."
+            print_error "Please update the APPLICATIONS variable in stack.mk to match the filesystem."
             exit 1
         else
-            print_success "All applications are properly listed in api.mk"
+            print_success "All applications are properly listed in stack.mk"
         fi
 
   version-validation:

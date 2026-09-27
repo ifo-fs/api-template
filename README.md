@@ -104,7 +104,7 @@ This template includes:
 
 3. **Define Services**
 
-   Edit `api.mk`:
+   Edit `stack.mk`:
 
    ```makefile
    APPLICATIONS := auth-service author-service category-service book-service api-gateway

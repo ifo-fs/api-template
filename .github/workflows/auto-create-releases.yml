@@ -79,17 +79,17 @@ jobs:
         table_content="| Application | Old Version | New Version | Status | Changelog Link |\n"
         table_content+="|-------------|-------------|-------------|--------|----------------|\n"
 
-        # Get applications from api.mk file
-        if [ ! -f "api.mk" ]; then
-          echo "❌ Error: api.mk file not found in repository root"
-          echo "The api.mk file is required to determine which applications to include in the release"
+        # Get applications from stack.mk file
+        if [ ! -f "stack.mk" ]; then
+          echo "❌ Error: stack.mk file not found in repository root"
+          echo "The stack.mk file is required to determine which applications to include in the release"
           exit 1
         fi
 
-        applications_line=$(grep "^APPLICATIONS" api.mk | head -1)
+        applications_line=$(grep "^APPLICATIONS" stack.mk | head -1)
         if [ -z "$applications_line" ]; then
-          echo "❌ Error: APPLICATIONS variable not found in api.mk"
-          echo "Please define APPLICATIONS in api.mk file with format: APPLICATIONS := app1 app2 app3"
+          echo "❌ Error: APPLICATIONS variable not found in stack.mk"
+          echo "Please define APPLICATIONS in stack.mk file with format: APPLICATIONS := app1 app2 app3"
           exit 1
         fi
 
@@ -97,14 +97,14 @@ jobs:
         applications_string=$(echo "$applications_line" | sed 's/^APPLICATIONS[[:space:]]*:=[[:space:]]*//')
 
         if [ -z "$applications_string" ]; then
-          echo "❌ Error: APPLICATIONS variable is empty in api.mk"
-          echo "Please define applications in api.mk file with format: APPLICATIONS := app1 app2 app3"
+          echo "❌ Error: APPLICATIONS variable is empty in stack.mk"
+          echo "Please define applications in stack.mk file with format: APPLICATIONS := app1 app2 app3"
           exit 1
         fi
 
         # Convert space-separated string to array
         read -ra applications <<< "$applications_string"
-        echo "✅ Found applications in api.mk: ${applications[*]} (${#applications[@]} total)"
+        echo "✅ Found applications in stack.mk: ${applications[*]} (${#applications[@]} total)"
 
         # Get previous versions from git history if previous release exists
         prev_tag="${{ steps.prev_release.outputs.prev_tag }}"

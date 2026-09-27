@@ -5,21 +5,21 @@
 # Set the certificates directory
 CERTS_DIR="certs"
 
-# Services to generate certificates for, read from api.mk's APPLICATIONS
+# Services to generate certificates for, read from stack.mk's APPLICATIONS
 # variable (single source of truth for the service list).
 # api-gateway gets a client certificate; the rest get server certificates.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_MK="$SCRIPT_DIR/../api.mk"
+STACK_MK="$SCRIPT_DIR/../stack.mk"
 
-if [ ! -f "$API_MK" ]; then
-    echo "Error: api.mk not found at $API_MK" >&2
+if [ ! -f "$STACK_MK" ]; then
+    echo "Error: stack.mk not found at $STACK_MK" >&2
     exit 1
 fi
 
-applications_line=$(grep -E '^APPLICATIONS[[:space:]]*:=' "$API_MK" | sed -E 's/^APPLICATIONS[[:space:]]*:=[[:space:]]*//')
+applications_line=$(grep -E '^APPLICATIONS[[:space:]]*:=' "$STACK_MK" | sed -E 's/^APPLICATIONS[[:space:]]*:=[[:space:]]*//')
 
 if [ -z "$applications_line" ]; then
-    echo "Error: APPLICATIONS variable not found in $API_MK" >&2
+    echo "Error: APPLICATIONS variable not found in $STACK_MK" >&2
     exit 1
 fi
 
