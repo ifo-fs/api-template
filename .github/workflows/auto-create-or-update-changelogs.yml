@@ -79,6 +79,9 @@ jobs:
             return 1
         }
 
+        # Base URL for linking commit hashes in changelog entries back to GitHub
+        repo_url="${{ github.server_url }}/${{ github.repository }}"
+
         print_info "Checking for application changes in pushed commits..."
         
         # Skip if this is an auto-generated changelog commit to prevent infinite loops
@@ -321,17 +324,26 @@ jobs:
                 continue
             fi
             
+            # Idempotency guard: skip if this version is already recorded, so a
+            # re-triggered/re-run workflow (or a push that forgot to bump VERSION)
+            # doesn't insert a duplicate "## [version]" heading
+            if [ -f "$changelog_file" ] && grep -q "^## \[${current_version}\]" "$changelog_file"; then
+                print_warning "Version ${current_version} already recorded in changelog for $application. Skipping duplicate entry."
+                continue
+            fi
+
             # Generate changelog entry
-            changelog_entry="## [${current_version}] - $(date +%Y-%m-%d' '%H:%M:%S)
-        
+            changelog_entry="## [${current_version}] - $(date -u +'%Y-%m-%d %H:%M:%S %Z')
+
         ### Changes
+
         "
             
             while IFS= read -r commit_line; do
                 if [ -n "$commit_line" ]; then
                     commit_hash=$(echo "$commit_line" | cut -d' ' -f1)
                     commit_msg=$(echo "$commit_line" | cut -d' ' -f2-)
-                    changelog_entry="${changelog_entry}- ${commit_msg} (${commit_hash})
+                    changelog_entry="${changelog_entry}- ${commit_msg} ([${commit_hash}](${repo_url}/commit/${commit_hash}))
         "
                 fi
             done <<< "$commits_for_application"
@@ -353,16 +365,17 @@ jobs:
                     echo "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),"
                     echo "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)."
                     echo ""
-                    echo "## [${current_version}] - $(date +%Y-%m-%d' '%H:%M:%S)"
+                    echo "## [${current_version}] - $(date -u +'%Y-%m-%d %H:%M:%S %Z')"
                     echo ""
                     echo "### Changes"
-                    
+                    echo ""
+
                     # Add commits from this push
                     while IFS= read -r commit_line; do
                         if [ -n "$commit_line" ]; then
                             commit_hash=$(echo "$commit_line" | cut -d' ' -f1)
                             commit_msg=$(echo "$commit_line" | cut -d' ' -f2-)
-                            echo "- ${commit_msg} (${commit_hash})"
+                            echo "- ${commit_msg} ([${commit_hash}](${repo_url}/commit/${commit_hash}))"
                         fi
                     done <<< "$commits_for_application"
                     
@@ -382,7 +395,6 @@ jobs:
                 awk -v new_entry="$changelog_entry" '
                 /^##/ && !inserted {
                     print new_entry
-                    print ""
                     inserted = 1
                 }
                 { print }
