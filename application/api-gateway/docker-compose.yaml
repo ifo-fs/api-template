@@ -32,4 +32,4 @@ services:
 networks:
   backend:
     external: true
-    name: ${SLUG}_backend_${ENV}
+    name: ${SLUG}_${ENV}
